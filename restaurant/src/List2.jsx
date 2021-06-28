@@ -4,12 +4,31 @@ import { DragDropContext, Droppable, Draggable } from "react-beautiful-dnd";
 const List2 = () => {
   const [details, setDetails] = useState({});
 
-  function handleOnDragEnd(result) {
-    const items = Array.from(details);
-    const [reorderedItem] = items.splice(result.source.index, 1);
-    console.log(result);
-    //items.splice(result.destination.index, 0, reorderedItem);
-    // setDetails(items);
+  function handleOnDragEnd(res) {
+    const sourcedetails = details.filter((item) => {
+      if (item.RestaurantID == res.source.droppableId) return item;
+    });
+
+    const sourceMenu = sourcedetails[0].menu;
+    const destinationdetails = details.filter((item) => {
+      if (item.RestaurantID == res.destination.droppableId) return item;
+    });
+
+    const destinationMenu = destinationdetails[0].menu;
+    const finalMenu = destinationMenu.concat(sourceMenu);
+    
+    const finaldetails = details;
+
+    const sourceIndex = details.findIndex((item, ind) => {
+      if (item.RestaurantID == res.source.droppableId) return ind;
+    });
+
+    const destinationIndex = details.findIndex((item, ind) => {
+      if (item.RestaurantID == res.destination.droppableId) return ind;
+    });
+    finaldetails[sourceIndex].menu=sourceMenu;
+    finaldetails[destinationIndex].menu=finalMenu;
+    setDetails(finaldetails);
   }
 
   /*useEffect hook is used to load data from API and Stroing its value in variable
@@ -39,42 +58,48 @@ const List2 = () => {
   /* traverseJson is used to traverse  through first child with two condition of type and selected */
   const traverseJson = (obj) => {
     let myjsx2 = []; //Array obj to store JSX
-
-    obj.forEach((element, index) => {
-      if (element.type === "item" && element.selected === 1) {
-        myjsx2.push(
-          <Draggable
-            // key={parseInt(element.id.match(/(\d+)/)[0])}
-            key={element.id.match(/\d+/g).join("")}
-            draggableId={element.id.match(/\d+/g).join("")}
-            index={index}
-          >
-            {(provided) => (
-              <li
-                ref={provided.innerRef}
-                {...provided.draggableProps}
-                {...provided.dragHandleProps}
-              >
-                <div>
-                  <span className='caret' onClick={(e) => toggleFunction(e)}>
-                    {element.name}
-                  </span>
-                  <ul className='nested'>
-                    {traverseChildjson(element.children)}
-                  </ul>
-                </div>
-              </li>
-            )}
-          </Draggable>
-        );
-      }
+    obj.forEach((child) => {
+      Array(child.children).forEach((element, index) => {
+        if (element[0].type === "item" && element[0].selected === 1) {
+          myjsx2.push(
+            <Draggable
+              // key={parseInt(element.id.match(/(\d+)/)[0])}
+              key={element[0].id.match(/\d+/g).join("")}
+              draggableId={element[0].id.match(/\d+/g).join("")}
+              index={index}
+            >
+              {(provided) => (
+                <li
+                  ref={provided.innerRef}
+                  {...provided.draggableProps}
+                  {...provided.dragHandleProps}
+                >
+                  <div>
+                    <span className='caret' onClick={(e) => toggleFunction(e)}>
+                      {element[0].name}
+                    </span>
+                    <ul className='nested'>
+                      {traverseChildjson(element[0].children)}
+                    </ul>
+                  </div>
+                </li>
+              )}
+            </Draggable>
+          );
+        }
+      });
     });
+
     return myjsx2;
   };
   //Toggle function to have toggling effect
   const toggleFunction = (e) => {
-    e.target.parentElement.querySelector(".nested").classList.toggle("active");
-    e.target.classList.toggle("caret-down");
+    if (e.target.parentElement.querySelector(".nested") != undefined) {
+      e.target.parentElement
+        .querySelector(".nested")
+        .classList.toggle("active");
+      e.target.classList.toggle("caret-down");
+    }
   };
 
   //function to display the output
@@ -84,23 +109,26 @@ const List2 = () => {
         <span className='caret' onClick={(e) => toggleFunction(e)}>
           {res[1].RestaurantName}
         </span>
-        {res[1].menu[0].type === "sectionheader" ? (
-          <DragDropContext onDragEnd={handleOnDragEnd}>
-            <Droppable droppableId={res[1].RestaurantID}>
-              {(provided) => (
-                <ul
-                  className='nested'
-                  {...provided.droppableProps}
-                  ref={provided.innerRef}
-                >
-                  <div>
-                    {traverseJson(res[1].menu[0].children)}
-                    {provided.placeholder}
-                  </div>
-                </ul>
-              )}
-            </Droppable>
-          </DragDropContext>
+        {res[1].menu[0] == undefined ||
+        res[1].menu[0].type === "sectionheader" ? (
+          <Droppable droppableId={res[1].RestaurantID}>
+            {(provided) => (
+              <ul
+                className='nested'
+                {...provided.droppableProps}
+                ref={provided.innerRef}
+              >
+                <div>
+                  {res[1].menu[0] != undefined ? (
+                    traverseJson(res[1].menu)
+                  ) : (
+                    <></>
+                  )}
+                  {provided.placeholder}
+                </div>
+              </ul>
+            )}
+          </Droppable>
         ) : (
           <></>
         )}
@@ -113,7 +141,9 @@ const List2 = () => {
   return (
     <div>
       <h1>List2</h1>
-      <ul>{displayRes}</ul>
+      <DragDropContext onDragEnd={handleOnDragEnd}>
+        <ul>{displayRes}</ul>
+      </DragDropContext>
     </div>
   );
 };
