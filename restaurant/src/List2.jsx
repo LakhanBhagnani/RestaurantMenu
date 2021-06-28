@@ -1,7 +1,17 @@
 import { React, useState, useEffect } from "react";
+import { DragDropContext, Droppable, Draggable } from "react-beautiful-dnd";
 
 const List2 = () => {
   const [details, setDetails] = useState({});
+
+  function handleOnDragEnd(result) {
+    const items = Array.from(details);
+    const [reorderedItem] = items.splice(result.source.index, 1);
+    console.log(result);
+    //items.splice(result.destination.index, 0, reorderedItem);
+    // setDetails(items);
+  }
+
   /*useEffect hook is used to load data from API and Stroing its value in variable
     As we don't want this effect to run again on re-renders I have added empty brackets which will automatically make sure it runs once*/
   useEffect(() => {
@@ -17,7 +27,6 @@ const List2 = () => {
     let innerchild = [];
     object.forEach((obj) => {
       if (obj.selected === 1) {
-        debugger;
         innerchild.push(<li>{obj.name}</li>);
         if (obj.chidren !== undefined) {
           traverseChildjson(obj.children);
@@ -31,36 +40,67 @@ const List2 = () => {
   const traverseJson = (obj) => {
     let myjsx2 = []; //Array obj to store JSX
 
-    obj.forEach((element) => {
+    obj.forEach((element, index) => {
       if (element.type === "item" && element.selected === 1) {
         myjsx2.push(
-          <li>
-            <span className='caret' onClick={(e) => toggleFunction(e)}>
-              {element.name}
-            </span>
-            <ul className='nested'>{traverseChildjson(element.children)}</ul>
-          </li>
+          <Draggable
+            // key={parseInt(element.id.match(/(\d+)/)[0])}
+            key={element.id.match(/\d+/g).join("")}
+            draggableId={element.id.match(/\d+/g).join("")}
+            index={index}
+          >
+            {(provided) => (
+              <li
+                ref={provided.innerRef}
+                {...provided.draggableProps}
+                {...provided.dragHandleProps}
+              >
+                <div>
+                  <span className='caret' onClick={(e) => toggleFunction(e)}>
+                    {element.name}
+                  </span>
+                  <ul className='nested'>
+                    {traverseChildjson(element.children)}
+                  </ul>
+                </div>
+              </li>
+            )}
+          </Draggable>
         );
       }
     });
     return myjsx2;
   };
-//Toggle function to have toggling effect
+  //Toggle function to have toggling effect
   const toggleFunction = (e) => {
-    debugger;
     e.target.parentElement.querySelector(".nested").classList.toggle("active");
     e.target.classList.toggle("caret-down");
   };
 
   //function to display the output
-  const displayRes = Object.entries(details).map((res) => {
+  const displayRes = Object.entries(details).map((res, index) => {
     let myjsx = (
       <li>
         <span className='caret' onClick={(e) => toggleFunction(e)}>
           {res[1].RestaurantName}
         </span>
         {res[1].menu[0].type === "sectionheader" ? (
-          <ul class='nested'>{traverseJson(res[1].menu[0].children)}</ul>
+          <DragDropContext onDragEnd={handleOnDragEnd}>
+            <Droppable droppableId={res[1].RestaurantID}>
+              {(provided) => (
+                <ul
+                  className='nested'
+                  {...provided.droppableProps}
+                  ref={provided.innerRef}
+                >
+                  <div>
+                    {traverseJson(res[1].menu[0].children)}
+                    {provided.placeholder}
+                  </div>
+                </ul>
+              )}
+            </Droppable>
+          </DragDropContext>
         ) : (
           <></>
         )}
