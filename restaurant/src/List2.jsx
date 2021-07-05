@@ -17,17 +17,19 @@ const List2 = () => {
     const destinationMenu = destinationdetails[0].menu;
     const finalMenu = destinationMenu.concat(sourceMenu);
     
-    const finaldetails = details;
+    const finaldetails = details.slice();
 
     const sourceIndex = details.findIndex((item, ind) => {
-      if (item.RestaurantID == res.source.droppableId) return ind;
+      if (item.RestaurantID == res.source.droppableId) {return ind;}
     });
 
     const destinationIndex = details.findIndex((item, ind) => {
-      if (item.RestaurantID == res.destination.droppableId) return ind;
+      if (item.RestaurantID == res.destination.droppableId){ return ind;}
     });
+    debugger
     finaldetails[sourceIndex].menu=sourceMenu;
     finaldetails[destinationIndex].menu=finalMenu;
+    console.log(finaldetails);
     setDetails(finaldetails);
   }
 
